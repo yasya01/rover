@@ -193,14 +193,18 @@ def rover():
         def clicked():
             res = txt1.get()
             res1 = txt2.get()
-            window.destroy()
-            p = Movement_system(0, 0)
-            p.move_object(canvas, item1, (int(res), int(res1)), 25)
-            f = Info_proc_system('move_object')
-            f.parse_signal()
-            global current_charge_level
-            k = Energy_system(current_charge_level)
-            k.reduce_charge_level('move')
+            if int(res) > 380 or (res1) > 380:
+                messagebox.showinfo('', 'No Mars here')
+                window.destroy()
+            else:
+                window.destroy()
+                p = Movement_system(0, 0)
+                p.move_object(canvas, item1, (int(res), int(res1)), 25)
+                f = Info_proc_system('move_object')
+                f.parse_signal()
+                global current_charge_level
+                k = Energy_system(current_charge_level)
+                k.reduce_charge_level('move')
 
         window = Toplevel(root)
         lbl = Label(window, text="new x")
