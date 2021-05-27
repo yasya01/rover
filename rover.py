@@ -8,8 +8,73 @@ from PIL import Image
 from tkinter.ttk import Combobox
 from tkinter import messagebox
 import base64
-current_charge_level = 5
+from datetime import datetime
+current_charge_level = 100
 
+
+class Energy_system:
+    def __init__(self, charge_level):
+        self.charge_level = charge_level
+
+    def reduce_charge_level(self, funk_name):
+        global current_charge_level
+        if funk_name == "drill" or funk_name == "apxs" or funk_name == "photo":
+            if current_charge_level < 11:
+                self.produce_charge_level()
+            else:
+                current_charge_level = current_charge_level - 10
+
+        elif funk_name == 'move':
+            if current_charge_level < 16:
+                self.produce_charge_level()
+            else:
+                current_charge_level = current_charge_level - 15
+        elif funk_name == 'filter':
+            if current_charge_level < 6:
+                self.produce_charge_level()
+            else:
+                current_charge_level = current_charge_level - 5
+        else:
+            messagebox.showinfo("Error")
+
+    def get_charge_level(self):
+        global current_charge_level
+        messagebox.showinfo("E_level: ", [current_charge_level, " %"])
+
+    def produce_charge_level(self):
+        time.sleep(5)
+        global current_charge_level
+        current_charge_level = 100
+        messagebox.showinfo("Full charged")
+
+
+class Info_proc_system:
+    def __init__(self, funk_name):
+        self.funk_name = funk_name
+    def parse_signal(self):
+        current_datetime = datetime.now()
+        message = self.funk_name+str(current_datetime)
+        message_bytes = message.encode('ascii')
+        base64_bytes = base64.b64encode(message_bytes)
+        res = base64_bytes.decode('ascii')
+        f = open("info.txt", "a")
+        f.writelines([res, "\n"])
+        f.close()
+
+    def unparse_signal(self):
+        res = "info.txt"
+        file1 = open(res, "r")
+        while True:
+            line = file1.readline()
+            if not line:
+                break
+            base64_bytes = line.encode('ascii')
+            message_bytes = base64.b64decode(base64_bytes)
+            message = message_bytes.decode('ascii')
+            f = open('de_info.txt', "a")
+            f.writelines([message, "\n"])
+            f.close()
+        file1.close
 
 
 class Photo_system:
@@ -18,22 +83,17 @@ class Photo_system:
         self.f_photo = f_photo
 
     def take_photo(self):
-        # Включаем первую камеру
-        #start = time.clock()
         cap = cv2.VideoCapture(0)
-        # "Прогреваем" камеру, чтобы снимок не был тёмным
         for i in range(30):
             cap.read()
-        # Делаем снимок
         ret, frame = cap.read()
-        # Записываем в файл
         cv2.imwrite(self.photo, frame)
-        # Отключаем камеру
         cap.release()
-       # end = time.clock()
-       # total = (end - start)*100
-       #  global current_charge_level
-       #  current_charge_level = current_charge_level- total*0.1
+        p = Info_proc_system('take_photo')
+        p.parse_signal()
+        global current_charge_level
+        k = Energy_system(current_charge_level)
+        k.reduce_charge_level('photo')
 
     def white_black(self, brightness):
         source = Image.open(self.photo)
@@ -48,33 +108,18 @@ class Photo_system:
                 else:
                     result.putpixel((x, y), (0, 0, 0))
         result.save(self.f_photo, "JPEG")
+        p = Info_proc_system('white_black')
+        p.parse_signal()
         global current_charge_level
-        current_charge_level = current_charge_level - total * 0.1
-
-
-
-class Antenna:
-
-    signal = ''
-    def __init__(self, signal):
-        self.signal = signal
-
-    def accept_signal(self):
-        print("accepted signal %d" % Antenna.signal)
-        total = random.randint(0,5)
-        global current_charge_level
-        current_charge_level = current_charge_level - total * 0.1
-    def send_signal(self):
-        print("Sended signal", self.signal)
-        total = randint(0, 5)
-        global current_charge_level
-        current_charge_level = current_charge_level - total * 0.1
+        k = Energy_system(current_charge_level)
+        k.reduce_charge_level('filter')
 
 
 class Exploration_system:
     def __init__(self, res):
         self.res = res
     def explore(self):
+        global current_charge_level
         if self.res == 'drill':
             k= random.randrange(1, 100)
             if k%2==0:
@@ -84,6 +129,10 @@ class Exploration_system:
             else:
                 messagebox.showinfo('There are:', 'Nothing')
 
+            k = Energy_system(current_charge_level)
+            k.reduce_charge_level('drill')
+
+
         if self.res == 'apxs':
             k = random.randrange(100,1000)
             if k % 2 == 0:
@@ -92,42 +141,18 @@ class Exploration_system:
                 messagebox.showinfo('There are:', '23% - Ne; 70% - Li')
             else:
                 messagebox.showinfo('There are:', '10% - O; 80% - C')
+
+            k = Energy_system(current_charge_level)
+            k.reduce_charge_level('apxs')
+
         else:
             print("Error")
+        p = Info_proc_system('explore')
+        p.parse_signal()
 
 
 
 
-
-class Info_proc_system:
-    def __init__(self, signal):
-        self.signal = signal
-    def parse_signal(self):
-        print("parsed")
-        res = base64.b64encode(self.signal)
-        f = open("info.txt", "w")
-        f.writelines(res)
-        f.close()
-        return res
-
-    def unparse_signal(self):
-        res = self
-        print("unparsed")
-
-
-class Energy_system:
-    def __init__(self,charge_level):
-        self.charge_level = charge_level
-
-    def reduce_charge_level(self):
-        coef=[0.1,0.2,0.1,0.2,0.3,]
-        coef_c = coef[0]
-        coef_e = coef[1]
-        coef_a = coef[2]
-        coef_i = coef[3]
-        coef_m = coef[4]
-    def get_charge_level(self):
-        print("Current level: ", self)
 
 class Movement_system:
     def __init__(self, x, y):
@@ -157,9 +182,9 @@ class Movement_system:
             canvas.after(speed, self.move_object, canvas, object_id, destination, speed)
 
 
-if __name__ == "__main__":
-
+def rover():
     root = Tk()
+    root.title("Mars")
     canvas = Canvas(root, width=400, height=400)
     canvas.grid()
     item1 = canvas.create_rectangle(10, 10, 30, 30, fill="red")
@@ -167,10 +192,15 @@ if __name__ == "__main__":
     def create_window_move():
         def clicked():
             res = txt1.get()
-            res1= txt2.get()
+            res1 = txt2.get()
             window.destroy()
             p = Movement_system(0, 0)
-            p.move_object(canvas, item1,( int(res),int(res1)), 25)
+            p.move_object(canvas, item1, (int(res), int(res1)), 25)
+            f = Info_proc_system('move_object')
+            f.parse_signal()
+            global current_charge_level
+            k = Energy_system(current_charge_level)
+            k.reduce_charge_level('move')
 
         window = Toplevel(root)
         lbl = Label(window, text="new x")
@@ -181,9 +211,8 @@ if __name__ == "__main__":
         txt1.grid(column=1, row=2)
         txt2 = Entry(window, width=10)
         txt2.grid(column=2, row=2)
-        btn = Button(window, text="Send!", command = clicked)
+        btn = Button(window, text="Send!", command=clicked)
         btn.grid(column=3, row=2)
-
 
     def create_window_photo():
         def clicked():
@@ -200,15 +229,15 @@ if __name__ == "__main__":
         btn = Button(window, text="Send!", command=clicked)
         btn.grid(column=3, row=2)
 
-
     def create_window_filter():
         def clicked():
             res = txt1.get()
             res1 = txt2.get()
             res2 = txt3.get()
             window.destroy()
-            p = Photo_system(res,res1)
+            p = Photo_system(res, res1)
             p.white_black(int(res2))
+
         window = Toplevel(root)
         lbl = Label(window, text="photo name")
         lbl.grid(column=1, row=1)
@@ -227,7 +256,7 @@ if __name__ == "__main__":
 
     def create_window_ex():
         def clicked():
-            p=Exploration_system('drill')
+            p = Exploration_system('drill')
             p.explore()
 
         def clicked_1():
@@ -240,27 +269,43 @@ if __name__ == "__main__":
         btn = Button(window, text="APXS!", command=clicked_1)
         btn.grid(column=1, row=1)
 
+    def create_window_info():
+        p = Info_proc_system('info')
+        p.unparse_signal()
+        window = Toplevel(root)
+        listbox = Listbox(window)
+        listbox.grid(row=1, column=0, columnspan=2, padx=20, pady=20)
+        listbox.insert(END, "History of commands")
+        with open('de_info.txt', 'r') as file:
+            lst = file.readlines()
+        for item in lst:
+            listbox.insert(END, item)
+
+    def create_window_energy():
+        global current_charge_level
+        p = Energy_system(current_charge_level)
+        p.get_charge_level()
+
     btn = Button(root, text="Take photo", command=create_window_photo)
     btn.grid(column=1, row=1)
 
     btn = Button(root, text="Put filter", command=create_window_filter)
     btn.grid(column=2, row=1)
 
-    btn = Button(root, text="Move rover!", command =create_window_move)
+    btn = Button(root, text="Move rover!", command=create_window_move)
     btn.grid(column=3, row=1)
 
-    btn = Button(root, text="Explore!", command = create_window_ex)
+    btn = Button(root, text="Explore!", command=create_window_ex)
     btn.grid(column=5, row=1)
 
-
-
-    btn = Button(root, text="Get signal!")
+    btn = Button(root, text="Info!", command=create_window_info)
     btn.grid(column=4, row=1)
 
-
-    btn = Button(root, text="Check Energy!")
+    btn = Button(root, text="Check Energy!", command=create_window_energy)
     btn.grid(column=6, row=1)
 
-
-
     root.mainloop()
+
+
+if __name__ == "__main__":
+    rover()
